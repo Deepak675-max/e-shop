@@ -1,9 +1,9 @@
 const express = require('express');
 
-const { getProductData } = require('../controller/shop');
+const { showErrorPage } = require('../controller/error');
 
 const router = express.Router();
 
-router.get('', getProductData);
+router.use(showErrorPage);
 
 module.exports = router;
