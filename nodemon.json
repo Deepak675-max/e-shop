@@ -1,0 +1,6 @@
+{
+    "ignore": [
+        "cart.json",
+        "products.json"
+    ]
+}
