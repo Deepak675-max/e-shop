@@ -33,8 +33,10 @@ exports.getIndex = (req, res, next) => {
   });
 };
 
-exports.getCart = (req, res, next) => {
+exports.getCart = async (req, res, next) => {
+  const cartProducts = await Cart.getCartProducts();
   res.render('shop/cart', {
+    cart: cartProducts,
     path: '/cart',
     pageTitle: 'Your Cart'
   });
@@ -44,7 +46,8 @@ exports.getCart = (req, res, next) => {
 exports.postCart = (req, res, next) => {
   const prodId = req.body.productId;
   Product.findById(prodId, product => {
-    Cart.addProduct(prodId, product.price);
+    console.log(product);
+    Cart.addProduct(product);
   });
   res.redirect('/cart');
 };
