@@ -17,12 +17,5 @@ const Cart = sequelize.define('Cart', {
   timestamps: true
 });
 
-Cart.sync({ alter: true })
-  .then(() => {
-    console.log('Cart table is synchronized.');
-  })
-  .catch((error) => {
-    console.error('Error synchronizing Cart table:', error);
-  });
 
 module.exports = Cart;

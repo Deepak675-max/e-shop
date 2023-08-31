@@ -12,16 +12,14 @@ exports.getAddProduct = (req, res, next) => {
 
 exports.postAddProduct = async (req, res, next) => {
   try {
-    const newProduct = new Product({
+    await req.user.createProduct({
       name: req.body.name,
       imageURL: req.body.imageURL,
       price: req.body.price,
       description: req.body.description
     })
-    newProduct.save().catch(error => {
-      console.error('Unable to save product:', error);
-    });
-    res.redirect('/');
+    res.redirect('/admin/products');
+
   } catch (error) {
     console.log(error);
     res.redirect('/add-product');
@@ -30,16 +28,12 @@ exports.postAddProduct = async (req, res, next) => {
 
 exports.getEditProduct = async (req, res, next) => {
   try {
-    const product = await Product.findOne({
-      where: {
-        id: req.params.productId,
-        isDeleted: false
-      }
-    });
+    const prodId = req.params.productId;
+    const product = await req.user.getProducts({ where: { id: prodId, isDeleted: false } });
     res.render('admin/edit-product', {
       pageTitle: 'Edit Product',
       path: '/admin/edit-product',
-      product: product
+      product: product[0]
     });
   } catch (error) {
     console.log(error);
@@ -72,11 +66,7 @@ exports.postEditProduct = async (req, res, next) => {
 
 exports.getProducts = async (req, res, next) => {
   try {
-    const products = await Product.findAll({
-      where: {
-        isDeleted: false
-      }
-    });
+    const products = await req.user.getProducts({ where: { isDeleted: false } });
     res.render('admin/products', {
       prods: products,
       pageTitle: 'Admin Products',

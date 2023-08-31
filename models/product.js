@@ -28,12 +28,5 @@ const Product = sequelize.define('Product', {
   timestamps: true
 });
 
-Product.sync({ alter: true })
-  .then(() => {
-    console.log('Product table is synchronized.');
-  })
-  .catch((error) => {
-    console.error('Error synchronizing Product table:', error);
-  });
 
 module.exports = Product;
