@@ -60,27 +60,10 @@ exports.getIndex = async (req, res, next) => {
 
 exports.getCart = async (req, res, next) => {
   try {
-    const cartProducts = await Cart.findAll({
-      where: {
-        isDeleted: false
-      }
-    })
-    // console.log(cartProducts);
-    const products = [];
-    await Promise.all(
-      cartProducts.map(async (cartProduct) => {
-        const product = await Product.findOne({
-          where: {
-            id: cartProduct.productId,
-            isDeleted: false
-          }
-        })
-        if (product)
-          products.push(product);
-      })
-    )
+    const cart = await req.user.getCart()
+    const products = await cart.getProducts()
     res.render('shop/cart', {
-      cart: products,
+      products: products,
       path: '/cart',
       pageTitle: 'Your Cart'
     });
@@ -90,16 +73,39 @@ exports.getCart = async (req, res, next) => {
   }
 };
 
-exports.postCart = (req, res, next) => {
+exports.postCart = async (req, res, next) => {
   try {
     const productId = req.body.productId;
-    const newCartProduct = new Cart({
-      productId: productId,
-      isDeleted: false
+    let newQuantity = 1;
+    const cart = await req.user.getCart()
+    const products = await cart.getProducts({ where: { id: productId } });
+    let product;
+    if (products.length > 0) {
+      product = products[0];
+    }
+    if (product) {
+      const oldQuantity = product.cartItem.quantity;
+      newQuantity = oldQuantity + 1;
+    }
+    else {
+      product = await Product.findByPk(productId);
+    }
+    cart.addProduct(product, {
+      through: { quantity: newQuantity }
     })
-    newCartProduct.save().catch(error => {
-      throw new Error("Unable to add product in cart")
-    })
+    res.redirect('/cart');
+  } catch (error) {
+    console.log(error);
+    res.redirect('/error');
+  }
+};
+
+exports.postCartDeleteProduct = async (req, res, next) => {
+  try {
+    const prodId = req.body.productId;
+    const cart = await req.user.getCart();
+    const products = await cart.getProducts({ where: { id: prodId } });
+    await products[0].cartItem.destroy();
     res.redirect('/cart');
   } catch (error) {
     console.log(error);
