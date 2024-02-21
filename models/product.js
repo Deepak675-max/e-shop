@@ -36,8 +36,8 @@ class Product {
   static async findById(productId) {
     try {
       const db = getDb();
-      const result = await db.collection('products').find({_id: new mongodb.ObjectId(productId)}).toArray();
-      return result;
+      const product = await db.collection('products').findOne({_id: mongodb.ObjectId.createFromHexString(productId)});
+      return product;
     } catch (error) {
       throw error;
     }
@@ -47,7 +47,7 @@ class Product {
     try {
       console.log(productId);
       const db = getDb();
-      const result = await db.collection('products').deleteOne({_id: new mongodb.ObjectId(productId)});
+      const result = await db.collection('products').deleteOne({_id: mongodb.ObjectId.createFromHexString(productId)});
       console.log(result);
       return result;
     } catch (error) {

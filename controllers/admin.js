@@ -26,13 +26,13 @@ exports.postAddProduct = async (req, res, next) => {
 
 exports.getEditProduct = (req, res, next) => {
   const editMode = req.query.edit;
+  console.log("edit mode", editMode);
   if (!editMode) {
     return res.redirect('/');
   }
   const prodId = req.params.productId;
   Product.findById(prodId)
-    .then(products => {
-      const product = products[0];
+    .then(product => {
       if (!product) {
         return res.redirect('/');
       }
