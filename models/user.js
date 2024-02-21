@@ -70,6 +70,34 @@ class User {
     }
   }
 
+  async addOrder() {
+    try {
+      const db = getDb();
+      const cartItems = await this.getCart();
+      const order = {
+        items: cartItems,
+        user: {
+          _id: this._id,
+          name: this.name
+        }
+      }
+      await db.collection('orders').insertOne(order);
+      this.cart = {items: []};
+      return await db.collection('users').updateOne({_id: this._id}, {$set: {cart: this.cart}}); 
+    } catch (error) {
+      throw new Error(`Error adding order: ${error.message}`);
+    }
+  }
+
+  async getOrders() {
+    try {
+      const db = getDb();
+      return await db.collection('orders').find({'user._id': this._id}).toArray(); 
+    } catch (error) {
+      throw new Error(`Error getting order: ${error.message}`);
+    }
+  }
+
 
   static async findById(userId) {
     try {
