@@ -10,78 +10,107 @@ exports.getAddProduct = (req, res, next) => {
 };
 
 exports.postAddProduct = async (req, res, next) => {
- try {
-  const title = req.body.title;
-  const imageUrl = req.body.imageUrl;
-  const price = req.body.price;
-  const description = req.body.description;
-  const product = new Product(title, price, imageUrl, description, null, req.user._id);
-  const result = await product.save();
-  console.log("Product created successfully", result);
-  res.redirect("/admin/products");
- } catch (error) {
-  console.log(error);
- }
-};
-
-exports.getEditProduct = (req, res, next) => {
-  const editMode = req.query.edit;
-  console.log("edit mode", editMode);
-  if (!editMode) {
-    return res.redirect('/');
+  try {
+    const productData = {
+      title: req.body.title,
+      price: req.body.price,
+      imageUrl: req.body.imageUrl,
+      description: req.body.description,
+      userId: req.user._id
+    }
+    const product = new Product(productData);
+    const result = await product.save();
+    console.log("Product created successfully", result);
+    res.redirect("/admin/products");
+  } catch (error) {
+    console.log(error);
   }
-  const prodId = req.params.productId;
-  Product.findById(prodId)
-    .then(product => {
-      if (!product) {
-        return res.redirect('/');
-      }
-      res.render('admin/edit-product', {
-        pageTitle: 'Edit Product',
-        path: '/admin/edit-product',
-        editing: editMode,
-        product: product
-      });
-    })
-    .catch(err => console.log(err));
 };
 
-exports.postEditProduct = (req, res, next) => {
-  const prodId = req.body.productId;
-  const updatedTitle = req.body.title;
-  const updatedPrice = req.body.price;
-  const updatedImageUrl = req.body.imageUrl;
-  const updatedDesc = req.body.description;
-  const product = new Product(updatedTitle, updatedPrice, updatedImageUrl, updatedDesc, new mongodb.ObjectId(prodId));
-  product.save()
-    .then(result => {
-      console.log('UPDATED PRODUCT!');
-      res.redirect('/admin/products');
-    })
-    .catch(err => console.log(err));
+exports.getEditProduct = async (req, res, next) => {
+  try {
+    const editMode = req.query.edit;
+    console.log("edit mode", editMode);
+    if (!editMode) {
+      return res.redirect('/');
+    }
+    const productId = req.params.productId;
+    const product = await Product.findOne({
+      _id: productId,
+      isDeleted: false
+    });
+    if (!product) {
+      return res.redirect('/');
+    }
+    res.render('admin/edit-product', {
+      pageTitle: 'Edit Product',
+      path: '/admin/edit-product',
+      editing: editMode,
+      product: product
+    });
+  } catch (error) {
+    console.log(error);
+    throw error;
+  }
 };
 
-exports.getProducts = (req, res, next) => {
-  Product.fetchAll()
-  .then(products => {
-      res.render('admin/products', {
-        prods: products,
-        pageTitle: 'Admin Products',
-        path: '/admin/products'
-      });
+exports.postEditProduct = async (req, res, next) => {
+  try {
+    const productData = {
+      productId: req.body.productId,
+      title: req.body.title,
+      price: req.body.price,
+      imageUrl: req.body.imageUrl,
+      description: req.body.description,
+      userId: req.user._id
+    }
+    const product = await Product.findOne({
+      _id: productData.productId,
+      isDeleted: false
     })
-    .catch(err => console.log(err));
+    if (!product) throw new Error("Product is not exist");
+    await product.updateOne(productData, {
+      new: true
+    });
+    console.log('UPDATED PRODUCT!');
+    res.redirect('/admin/products');
+  } catch (error) {
+    console.log(error);
+    throw error;
+  }
 };
 
-exports.postDeleteProduct = (req, res, next) => {
-  const prodId = req.body.productId;
-  console.log("product id", prodId);
-  Product.deleteOne(prodId)
-    .then(result => {
-      if(result.acknowledged) {
-        console.log('DESTROYED PRODUCT');
-        res.redirect('/admin/products');
-      }
+exports.getProducts = async (req, res, next) => {
+  try {
+    const products = await Product.find({
+      isDeleted: false
+    });
+    res.render('admin/products', {
+      prods: products,
+      pageTitle: 'Admin Products',
+      path: '/admin/products'
+    });
+  } catch (error) {
+    console.log(error);
+    throw error;
+  }
+};
+
+exports.postDeleteProduct = async (req, res, next) => {
+  try {
+    const productId = req.body.productId;
+    const product = await Product.findOne({
+      _id: productId,
+      isDeleted: false
     })
-    .catch(err => console.log(err));
+    if (!product) throw new Error("Product is not exist");
+    await product.updateOne({ isDeleted: true }, {
+      new: true
+    });
+    console.log('DESTROYED PRODUCT');
+    res.redirect('/admin/products');
+  } catch (error) {
+    console.log(error);
+    throw error;
+  }
 };

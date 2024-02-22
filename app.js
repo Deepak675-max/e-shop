@@ -3,7 +3,7 @@ const path = require('path');
 const express = require('express');
 const bodyParser = require('body-parser');
 const errorController = require('./controllers/error');
-const {mongoConnect} = require("./util/database");
+require("./util/database");
 
 const app = express();
 
@@ -17,13 +17,19 @@ const User = require("./models/user");
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(express.static(path.join(__dirname, 'public')));
 
-app.use((req, res, next) => {
-  User.findById("65d5caadda5932322f4a6ccb")
-    .then(user => {
-      req.user = new User(user.name, user.email, user.cart, user._id);
-      next();
-    })
-    .catch(err => console.log(err));
+app.use(async (req, res, next) => {
+  try {
+    const user = await User.findById('65d6f1da1449eaa84d3c956a').populate({
+      path: 'cart.items.productId',
+      match: { isDeleted: false } // Include products with isDeleted: true
+    }).exec();
+    if (!user) throw new Error("User not found");
+    req.user = user;
+    next();
+  } catch (error) {
+    console.log(error);
+    res.status(500).send(error.message);
+  }
 });
 
 app.use('/admin', adminRoutes);
@@ -33,8 +39,18 @@ const port = process.env.APP_PORT;
 
 app.use(errorController.get404);
 
-mongoConnect(() => {
-  app.listen(port, ()=> {
-    console.log("Application is running on the port of", port);
-  })
+app.listen(port, () => {
+  console.log(`server is listening on the port of ${port}`);
 })
+
+process.on('SIGINT', () => {
+  // Perform cleanup operations here
+  console.log('Received SIGINT signal. application terminated successfully.');
+
+  // Exit the application
+  process.exit(0);
+});
+
+process.on("uncaughtException", (error) => {
+  console.error(`Uncaught Exception Occured\n${error}`);
+});
