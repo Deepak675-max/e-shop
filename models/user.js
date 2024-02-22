@@ -1,6 +1,5 @@
 const mongoose = require('mongoose');
-const Product = require("./product");
-
+const Order = require("./order");
 const userSchema = new mongoose.Schema({
   name: {
     type: String,
@@ -12,7 +11,7 @@ const userSchema = new mongoose.Schema({
   },
   cart: {
     items: [{
-      productId: {
+      product: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'product',
         required: true,
@@ -35,7 +34,8 @@ const userSchema = new mongoose.Schema({
 
 userSchema.methods.addToCart = async function (product) {
   try {
-    const cartItemIndex = this.cart.items.findIndex(item => item.productId._id.toString() === product._id.toString());
+    const cartItemIndex = this.cart.items.findIndex(item => item.product._id.toString() === product._id.toString());
+    console.log("cart item index", cartItemIndex)
     const updatedCartItems = [...this.cart.items];
     let newQuantity = 1;
 
@@ -44,7 +44,7 @@ userSchema.methods.addToCart = async function (product) {
       updatedCartItems[cartItemIndex].quantity = newQuantity;
     }
     else {
-      updatedCartItems.push({ productId: product._id, quantity: newQuantity })
+      updatedCartItems.push({ product: product._id, quantity: newQuantity })
     }
 
     const updatedCart = {
@@ -54,6 +54,22 @@ userSchema.methods.addToCart = async function (product) {
     return await this.save()
   } catch (error) {
     throw new Error(`Error adding product in cart: ${error.message}`);
+  }
+}
+
+userSchema.methods.addOrder = async function (product) {
+  try {
+    const cartItems = this.cart.items;
+    const order = {
+      items: cartItems,
+      user: this._id
+    }
+    const newOrder = new Order(order);
+    await newOrder.save();
+    this.cart = { items: [] };
+    return await this.save();
+  } catch (error) {
+    throw new Error(`Error adding order: ${error.message}`);
   }
 }
 

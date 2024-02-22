@@ -1,3 +1,4 @@
+const Order = require("../models/order");
 const Product = require("../models/product");
 const User = require("../models/user");
 
@@ -57,7 +58,7 @@ exports.getIndex = async (req, res, next) => {
 exports.getCart = async (req, res, next) => {
   const items = req.user.cart.items;
   // Filter out null or undefined products
-  const filteredProducts = items.filter(item => item.productId);
+  const filteredProducts = items.filter(item => item.product);
   // Update the user's cart with the filtered products
   req.user.cart.items = filteredProducts;
   await req.user.save();
@@ -92,7 +93,7 @@ exports.postCartDeleteProduct = async (req, res, next) => {
     const productId = req.body.productId;
     console.log(productId);
     const items = req.user.cart.items;
-    const updatedCartItems = items.filter(item => item.productId._id.toString() !== productId.toString());
+    const updatedCartItems = items.filter(item => item.product._id.toString() !== productId.toString());
     req.user.cart.items = updatedCartItems;
     await req.user.save();
     console.log("Deleted cart item successfully");
@@ -103,25 +104,27 @@ exports.postCartDeleteProduct = async (req, res, next) => {
   }
 };
 
-exports.postOrder = (req, res, next) => {
-  req.user
-    .addOrder()
-    .then(result => {
-      console.log("order placed successfully", result);
-      res.redirect('/orders');
-    })
-    .catch(err => console.log(err));
+exports.postOrder = async (req, res, next) => {
+  try {
+    const result = await req.user.addOrder();
+    console.log("order placed successfully", result);
+    res.redirect('/orders');
+  } catch (error) {
+    console.log(error);
+    res.status(500).send(error.message);
+  }
 };
 
-exports.getOrders = (req, res, next) => {
-  req.user
-    .getOrders()
-    .then(orders => {
-      res.render('shop/orders', {
-        path: '/orders',
-        pageTitle: 'Your Orders',
-        orders: orders
-      });
-    })
-    .catch(err => console.log(err));
+exports.getOrders = async (req, res, next) => {
+  try {
+    const orders = await Order.find({ user: req.user._id, isDeleted: false }).populate('items.product').exec();
+    res.render('shop/orders', {
+      path: '/orders',
+      pageTitle: 'Your Orders',
+      orders: orders
+    });
+  } catch (error) {
+    console.log(error);
+    res.status(500).send(error.message);
+  }
 };

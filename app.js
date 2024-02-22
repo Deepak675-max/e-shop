@@ -19,8 +19,8 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 app.use(async (req, res, next) => {
   try {
-    const user = await User.findById('65d6f1da1449eaa84d3c956a').populate({
-      path: 'cart.items.productId',
+    const user = await User.findById('65d7207889689c70366e55ca').populate({
+      path: 'cart.items.product',
       match: { isDeleted: false } // Include products with isDeleted: true
     }).exec();
     if (!user) throw new Error("User not found");
