@@ -70,9 +70,10 @@ exports.postCart = async (req, res, next) => {
 
 exports.postCartDeleteProduct = (req, res, next) => {
   const prodId = req.body.productId;
-  Product.findById(prodId).then(product => {
-    return req.user.deleteItemFromCart(product)
-  })
+  // Product.findById(prodId).then(product => {
+  //   return req.user.deleteItemFromCart(product)
+  // })
+  req.user.deleteItemFromCart(prodId)
   .then(result => {
     console.log("Deleted cart item successfully", result);
     res.redirect('/cart');

@@ -45,24 +45,30 @@ class User {
   async getCart() {
     try {
       const db = getDb();
-      const productsIds = this.cart.items.map((item) => item.productId);
-      const products = await db.collection('products').find({_id: {$in: productsIds}}).toArray();
-      return await Promise.all(
-        products.map(product => {
-          return {
-            ...product,
-            quantity: this.cart.items.find(item => (item.productId).toString() === (product._id).toString()).quantity
-          }
-        })
-      )
+      const products = [];
+      await Promise.all(
+          this.cart.items.map(async (item) => {
+              const product = await db.collection('products').findOne({ _id: item.productId });
+              if (product) {
+                  products.push({
+                      ...product,
+                      quantity: item.quantity
+                  });
+              } else {
+                  // If the product is not found, you can handle it as per your requirements
+                  await this.deleteItemFromCart(item.productId);
+              }
+          })
+      );
+      return products;
     } catch (error) {
       throw new Error(`Error in getting cart: ${error.message}`);
     }
   }
 
-  async deleteItemFromCart(product) {
+  async deleteItemFromCart(productId) {
     try {
-      const updatedCartItems = this.cart.items.filter(item => item.productId.toString() !== product._id.toString());
+      const updatedCartItems = this.cart.items.filter(item => item.productId.toString() !== productId.toString());
       const db = getDb();
       return await db.collection('users').updateOne({_id: this._id}, {$set: {cart: {items: updatedCartItems}}}); 
     } catch (error) {
